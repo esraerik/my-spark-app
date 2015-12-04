@@ -10,18 +10,36 @@ import org.apache.spark.api.java.function.PairFunction;
 
 
 
+
+
+
+
+
+
+import org.apache.spark.ml.feature.StopWordsRemover;
+
+
+
+
 //import WordCountJava.SerializableComparator;
 import scala.Tuple2;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class WordCount {
   private static final FlatMapFunction<String, String> WORDS_EXTRACTOR =
@@ -49,24 +67,38 @@ public class WordCount {
 	  System.setProperty("hadoop.home.dir", "C:\\winutil\\");
     String test = new String();
 	if (args.length < 1) {
-      test="src/test/resources/loremipsum.txt";
+      test="src/test/resources/kitap.txt";
       //System.err.println("Please provide the input file full path as argument");
       //System.exit(0);
     }
+	 List<String> stopWords;
 
+     // Load stop words
+     try (FileReader inputStream = new FileReader("src/test/resources/stopWords.txt");
+          BufferedReader bufferedReader = new BufferedReader(inputStream)) {
+        stopWords = bufferedReader.lines().collect(Collectors.toList());
+     }
+   
+    	  System.out.println(stopWords.size()+stopWords.get(45));
+	
     SparkConf conf = new SparkConf().setAppName("org.sparkexample.WordCount").setMaster("local");
     JavaSparkContext context = new JavaSparkContext(conf);
-
+    
     JavaRDD<String> file = context.textFile(test);
     JavaRDD<String> words = file.flatMap(WORDS_EXTRACTOR);
-    JavaPairRDD<String, Integer> pairs = words.mapToPair(WORDS_MAPPER);
+    JavaRDD<String> counter3= words.filter(s -> !stopWords.contains(s));
+    JavaPairRDD<String, Integer> pairs = counter3.mapToPair(WORDS_MAPPER);
     JavaPairRDD<String, Integer> counter = pairs.reduceByKey(WORDS_REDUCER);
-    List<Tuple2<String, Integer>> counter2= counter.takeOrdered(20, (SerializableComparator<Tuple2<String, Integer>>) (o1, o2) -> o2._2().compareTo(o1._2()));
+    List<Tuple2<String, Integer>> counter2= counter.takeOrdered(50, (SerializableComparator<Tuple2<String, Integer>>) (o1, o2) -> o2._2().compareTo(o1._2()));
    
     counter2.forEach(res -> System.out.format("'%s' appears %d times\n", res._1(), res._2()));
     FileWriter fw = new FileWriter("src/test/resources/count/sonuc.txt");
 	BufferedWriter bw = new BufferedWriter(fw);
-	bw.write(counter2.toString());
+	for (int i = 0; i < counter2.size(); i++) {
+		bw.write(counter2.get(i).toString());
+		bw.newLine();
+	}
+	
 	bw.close();
 //    counter2.saveAsTextFile("src/test/resources/count");
   }
