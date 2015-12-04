@@ -7,10 +7,15 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 
+
+
+
 //import WordCountJava.SerializableComparator;
 import scala.Tuple2;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Comparator;
@@ -56,10 +61,14 @@ public class WordCount {
     JavaRDD<String> words = file.flatMap(WORDS_EXTRACTOR);
     JavaPairRDD<String, Integer> pairs = words.mapToPair(WORDS_MAPPER);
     JavaPairRDD<String, Integer> counter = pairs.reduceByKey(WORDS_REDUCER);
-    JavaPairRDD<String, Integer> counter2=(JavaPairRDD<String, Integer>) counter.takeOrdered(20, (SerializableComparator<Tuple2<String, Integer>>) (o1, o2) -> o2._2().compareTo(o1._2()));
+    List<Tuple2<String, Integer>> counter2= counter.takeOrdered(20, (SerializableComparator<Tuple2<String, Integer>>) (o1, o2) -> o2._2().compareTo(o1._2()));
    
-
-    counter2.saveAsTextFile("src/test/resources/count");
+    counter2.forEach(res -> System.out.format("'%s' appears %d times\n", res._1(), res._2()));
+//    FileWriter fw = new FileWriter();
+//	BufferedWriter bw = new BufferedWriter(fw);
+//	bw.write(content);
+//	bw.close();
+//    counter2.saveAsTextFile("src/test/resources/count");
   }
   
   private String getFile(String fileName) {
