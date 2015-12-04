@@ -45,7 +45,7 @@ public class WordCount {
         }
       };
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
 	  System.setProperty("hadoop.home.dir", "C:\\winutil\\");
     String test = new String();
 	if (args.length < 1) {
@@ -64,10 +64,10 @@ public class WordCount {
     List<Tuple2<String, Integer>> counter2= counter.takeOrdered(20, (SerializableComparator<Tuple2<String, Integer>>) (o1, o2) -> o2._2().compareTo(o1._2()));
    
     counter2.forEach(res -> System.out.format("'%s' appears %d times\n", res._1(), res._2()));
-//    FileWriter fw = new FileWriter();
-//	BufferedWriter bw = new BufferedWriter(fw);
-//	bw.write(content);
-//	bw.close();
+    FileWriter fw = new FileWriter("src/test/resources/count/sonuc.txt");
+	BufferedWriter bw = new BufferedWriter(fw);
+	bw.write(counter2.toString());
+	bw.close();
 //    counter2.saveAsTextFile("src/test/resources/count");
   }
   
